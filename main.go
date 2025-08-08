@@ -37,28 +37,11 @@ func readLines() {
 	}
 
 	if len(line) > 0 {
-		fmt.Printf("line: %s\n", line)
+		fmt.Printf("read: %s\n", line)
 		line = ""
 	}
 }
 
 func main() {
-	file, err := os.Open("message.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer file.Close()
-
-	for {
-		bs := make([]byte, 8)
-		_, err = file.Read(bs)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println(err)
-			}
-			break
-		}
-		fmt.Printf("read: %s\n", string(bs))
-	}
-
+	readLines()
 }
