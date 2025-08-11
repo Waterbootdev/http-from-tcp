@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+const MINIMALSIZE int = 1
+
 type dataBuffer struct {
 	reader      io.Reader
 	data        []byte
@@ -12,19 +14,29 @@ type dataBuffer struct {
 	eof         bool
 }
 
-func (d *dataBuffer) init(reader io.Reader) {
-	d.reader = reader
-	d.data = make([]byte, BYTES_PER_CHUNK, BYTES_PER_CHUNK)
-	d.readPointer = 0
-	d.eof = false
+func newDataBuffer(reader io.Reader, initialSize int) *dataBuffer {
+
+	if initialSize < MINIMALSIZE {
+		initialSize = MINIMALSIZE
+	}
+
+	return &dataBuffer{
+		reader:      reader,
+		data:        make([]byte, initialSize, initialSize),
+		readPointer: 0,
+		eof:         false,
+	}
 }
+
 func (d *dataBuffer) current() []byte {
 	return d.data[:d.readPointer]
 }
 
 func (d *dataBuffer) remove(length int) {
-	copy(d.data, d.data[length:])
-	d.readPointer -= length
+	if length > 0 {
+		copy(d.data, d.data[length:])
+		d.readPointer -= length
+	}
 }
 func (d *dataBuffer) resizeIfNecessary() {
 	if d.readPointer >= len(d.data) {
@@ -34,22 +46,22 @@ func (d *dataBuffer) resizeIfNecessary() {
 	}
 }
 
-func (d *dataBuffer) readChunk() error {
+func (d *dataBuffer) readNext() error {
+	n, err := d.reader.Read(d.data[d.readPointer:])
+	d.readPointer += n
+	return err
+}
+
+func (d *dataBuffer) readNextEOF() error {
 
 	d.resizeIfNecessary()
 
-	n, err := d.reader.Read(d.data[d.readPointer:])
+	err := d.readNext()
 
-	d.readPointer += n
-
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			d.eof = true
-			return nil
-		}
-
-		return err
+	if errors.Is(err, io.EOF) {
+		d.eof = true
+		err = nil
 	}
 
-	return nil
+	return err
 }

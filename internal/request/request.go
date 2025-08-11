@@ -27,8 +27,7 @@ type RequestLine struct {
 }
 
 const CRLF string = "\r\n"
-const LENGTH_CRLF int = 2
-const BYTES_PER_CHUNK int = 8
+const LENGTH_CRLF int = len(CRLF)
 
 func parseRequestLine(line string) (RequestLine, error) {
 
@@ -67,29 +66,28 @@ func parseRequestLine(line string) (RequestLine, error) {
 
 func (r *Request) parse(data []byte) int {
 
-	idx := bytes.Index(data, []byte(CRLF))
+	crlfIndex := bytes.Index(data, []byte(CRLF))
 
-	if idx == -1 {
+	if crlfIndex == -1 {
 		return 0
 	}
 
 	r.ParserState = Done
 
-	r.RequestLine, r.ParseError = parseRequestLine(string(data[:idx]))
+	r.RequestLine, r.ParseError = parseRequestLine(string(data[:crlfIndex]))
 
-	return idx + LENGTH_CRLF
+	return crlfIndex + LENGTH_CRLF
 }
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 
-	dataBuffer := &dataBuffer{}
-	dataBuffer.init(reader)
+	dataBuffer := newDataBuffer(reader, MINIMALSIZE)
 
 	request := &Request{ParserState: Initialized}
 
 	for request.ParserState != Done {
 
-		err := dataBuffer.readChunk()
+		err := dataBuffer.readNextEOF()
 
 		if err != nil {
 			return request, err
