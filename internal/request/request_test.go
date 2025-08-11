@@ -49,6 +49,23 @@ func TestRequestLineParse(t *testing.T) {
 	_, err = RequestFromReader(strings.NewReader("GET /coffee HTTP/1.2\r\nHost: localhost:42069\r\nUser-Agent: curl/7.81.0\r\nAccept: */*\r\n\r\n"))
 	require.Error(t, err)
 
+	// Test: Empy
+	_, err = RequestFromReader(strings.NewReader(""))
+	require.Error(t, err)
+	// Test: Invalide No CRLF
+	_, err = RequestFromReader(strings.NewReader("GET /coffee HTTP/1.1"))
+	require.Error(t, err)
+
+	_, err = RequestFromReader(strings.NewReader("GET /coffee HTTP/1.1\r"))
+	require.Error(t, err)
+
+	_, err = RequestFromReader(strings.NewReader("GET /coffee HTTP/1.1\n"))
+	require.Error(t, err)
+	_, err = RequestFromReader(strings.NewReader("POST /coffee HTTP/1.1\nHost: localhost:42069\r\nUser-Agent: curl/7.81.0\r\nAccept: */*\r\n\r\n"))
+	require.Error(t, err)
+	_, err = RequestFromReader(strings.NewReader("POST /coffee HTTP/1.1\r \nHost: localhost:42069\r\nUser-Agent: curl/7.81.0\r\nAccept: */*\r\n\r\n"))
+	require.Error(t, err)
+
 }
 
 type chunkReader struct {

@@ -94,6 +94,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		}
 
 		if dataBuffer.eof {
+			request.ParseError = errors.New("unexpected EOF")
 			request.ParserState = Done
 			break
 		}

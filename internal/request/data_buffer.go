@@ -10,7 +10,7 @@ const MINIMALSIZE int = 1
 type dataBuffer struct {
 	reader      io.Reader
 	data        []byte
-	readPointer int
+	numberBytes int
 	eof         bool
 }
 
@@ -23,23 +23,23 @@ func newDataBuffer(reader io.Reader, initialSize int) *dataBuffer {
 	return &dataBuffer{
 		reader:      reader,
 		data:        make([]byte, initialSize, initialSize),
-		readPointer: 0,
+		numberBytes: 0,
 		eof:         false,
 	}
 }
 
 func (d *dataBuffer) current() []byte {
-	return d.data[:d.readPointer]
+	return d.data[:d.numberBytes]
 }
 
-func (d *dataBuffer) remove(length int) {
-	if length > 0 {
-		copy(d.data, d.data[length:])
-		d.readPointer -= length
+func (d *dataBuffer) remove(numberBytesToRemove int) {
+	if numberBytesToRemove > 0 {
+		copy(d.data, d.data[numberBytesToRemove:])
+		d.numberBytes -= numberBytesToRemove
 	}
 }
 func (d *dataBuffer) resizeIfNecessary() {
-	if d.readPointer >= len(d.data) {
+	if d.numberBytes >= len(d.data) {
 		newBuf := make([]byte, len(d.data)*2)
 		copy(newBuf, d.data)
 		d.data = newBuf
@@ -47,8 +47,8 @@ func (d *dataBuffer) resizeIfNecessary() {
 }
 
 func (d *dataBuffer) readNext() error {
-	n, err := d.reader.Read(d.data[d.readPointer:])
-	d.readPointer += n
+	numberBytesReaded, err := d.reader.Read(d.data[d.numberBytes:])
+	d.numberBytes += numberBytesReaded
 	return err
 }
 
