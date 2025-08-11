@@ -1,13 +1,23 @@
 package request
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"strings"
 )
 
+type ParserState int
+
+const (
+	Initialized ParserState = iota
+	Done
+)
+
 type Request struct {
 	RequestLine RequestLine
+	ParserState ParserState
+	ParseError  error
 }
 
 type RequestLine struct {
@@ -17,6 +27,8 @@ type RequestLine struct {
 }
 
 const CRLF string = "\r\n"
+const LENGTH_CRLF int = 2
+const BYTES_PER_CHUNK int = 8
 
 func parseRequestLine(line string) (RequestLine, error) {
 
@@ -53,33 +65,43 @@ func parseRequestLine(line string) (RequestLine, error) {
 	return RequestLine{HttpVersion: httpVersion, RequestTarget: requestTarget, Method: method}, nil
 }
 
-func readLines(reader io.Reader) ([]string, error) {
+func (r *Request) parse(data []byte) int {
 
-	all, err := io.ReadAll(reader)
+	idx := bytes.Index(data, []byte(CRLF))
 
-	if err != nil {
-		return nil, err
+	if idx == -1 {
+		return 0
 	}
 
-	return strings.Split(string(all), CRLF), nil
+	r.ParserState = Done
+
+	r.RequestLine, r.ParseError = parseRequestLine(string(data[:idx]))
+
+	return idx + LENGTH_CRLF
 }
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 
-	lines, err := readLines(reader)
+	dataBuffer := &dataBuffer{}
+	dataBuffer.init(reader)
 
-	if err != nil || len(lines) == 0 {
-		return nil, err
+	request := &Request{ParserState: Initialized}
+
+	for request.ParserState != Done {
+
+		err := dataBuffer.readChunk()
+
+		if err != nil {
+			return request, err
+		}
+
+		if dataBuffer.eof {
+			request.ParserState = Done
+			break
+		}
+
+		dataBuffer.remove(request.parse(dataBuffer.current()))
 	}
 
-	requestLine, err := parseRequestLine(lines[0])
-
-	if err != nil {
-		return nil, err
-	}
-
-	request := Request{RequestLine: requestLine}
-
-	return &request, nil
-
+	return request, request.ParseError
 }
