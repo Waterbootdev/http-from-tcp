@@ -3,6 +3,7 @@ package request
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -24,6 +25,13 @@ type RequestLine struct {
 	HttpVersion   string
 	RequestTarget string
 	Method        string
+}
+
+func (r *RequestLine) RequestLineString() string {
+	return fmt.Sprintf(`Request line:
+- Method: %s
+- Target: %s
+- Version: %s`, r.Method, r.RequestTarget, r.HttpVersion)
 }
 
 const CRLF string = "\r\n"

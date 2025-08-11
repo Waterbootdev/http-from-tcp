@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/Waterbootdev/http-from-tcp/internal/request"
 )
 
 func main() {
@@ -24,9 +26,16 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection has been accepted")
-		lines := getLinesChannel(conn)
-		for line := range lines {
-			fmt.Println(line)
+
+		request, err := request.RequestFromReader(conn)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
+
+		fmt.Println(request.RequestLine.RequestLineString())
+		fmt.Println()
+		fmt.Println("Connection to ", conn.RemoteAddr(), "closed")
 	}
 }
