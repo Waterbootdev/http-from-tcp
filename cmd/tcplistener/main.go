@@ -34,8 +34,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println(request.RequestLine.RequestLineString())
-		fmt.Println()
+		request.Print()
+
 		fmt.Println("Connection to ", conn.RemoteAddr(), "closed")
 	}
 }

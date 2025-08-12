@@ -3,12 +3,21 @@ package headers
 import (
 	"bytes"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/Waterbootdev/http-from-tcp/internal/commen"
 )
 
 type Headers map[string]string
+
+func (h Headers) IsContentLengthNot(contentLength int) bool {
+	if value, ok := h["content-length"]; ok {
+		return strconv.Itoa(contentLength) != value
+	} else {
+		return contentLength != 0
+	}
+}
 
 func NewHeaders() Headers {
 	return make(Headers)
@@ -35,7 +44,7 @@ func isNotValidToken(toValidate string) bool {
 	return false
 }
 
-func (h Headers) Parse(data []byte) (n int, done bool, err error) {
+func (h Headers) parseSingel(data []byte) (n int, done bool, err error) {
 
 	crlfIndex := bytes.Index(data, []byte(commen.CRLF))
 
@@ -63,6 +72,32 @@ func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 
 	return numberBytesReaded, false, err
 }
+func (h Headers) Parse(data []byte) (numberBytesParsed int, done bool, err error) {
+
+	for !done {
+
+		var lastNumberBytesParsed int
+
+		lastNumberBytesParsed, done, err = h.parseSingel(data[numberBytesParsed:])
+
+		if err != nil {
+
+			for key := range h {
+				delete(h, key)
+			}
+
+			return 0, done, err
+		}
+
+		if lastNumberBytesParsed == 0 {
+			return numberBytesParsed, done, err
+		}
+
+		numberBytesParsed += lastNumberBytesParsed
+	}
+
+	return numberBytesParsed, done, err
+}
 
 func splitFieldLine(s string) (string, string, error) {
 	s = strings.TrimSpace(s)
@@ -88,4 +123,20 @@ func parseFieldLine(s string) (string, string, error) {
 	}
 
 	return strings.ToLower(token), value, nil
+}
+
+func (h Headers) HeadersString() string {
+
+	var buffer bytes.Buffer
+	buffer.WriteString("Headers:\r\n")
+
+	for key, value := range h {
+		buffer.WriteString("- ")
+		buffer.WriteString(key)
+		buffer.WriteString(": ")
+		buffer.WriteString(value)
+		buffer.WriteString("\r\n")
+	}
+
+	return buffer.String()
 }
