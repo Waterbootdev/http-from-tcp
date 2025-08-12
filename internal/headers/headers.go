@@ -55,6 +55,10 @@ func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 		return 0, false, err
 	}
 
+	if existingValue, ok := h[key]; ok {
+		value = existingValue + ", " + value
+	}
+
 	h[key] = value
 
 	return numberBytesReaded, false, err
