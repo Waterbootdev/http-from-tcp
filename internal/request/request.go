@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/Waterbootdev/http-from-tcp/internal/buffer"
+	"github.com/Waterbootdev/http-from-tcp/internal/commen"
 )
 
 type ParserState int
@@ -33,9 +36,6 @@ func (r *RequestLine) RequestLineString() string {
 - Target: %s
 - Version: %s`, r.Method, r.RequestTarget, r.HttpVersion)
 }
-
-const CRLF string = "\r\n"
-const LENGTH_CRLF int = len(CRLF)
 
 func parseRequestLine(line string) (RequestLine, error) {
 
@@ -74,7 +74,7 @@ func parseRequestLine(line string) (RequestLine, error) {
 
 func (r *Request) parse(data []byte) int {
 
-	crlfIndex := bytes.Index(data, []byte(CRLF))
+	crlfIndex := bytes.Index(data, []byte(commen.CRLF))
 
 	if crlfIndex == -1 {
 		return 0
@@ -84,30 +84,30 @@ func (r *Request) parse(data []byte) int {
 
 	r.RequestLine, r.ParseError = parseRequestLine(string(data[:crlfIndex]))
 
-	return crlfIndex + LENGTH_CRLF
+	return crlfIndex + commen.LENGTH_CRLF
 }
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 
-	dataBuffer := newDataBuffer(reader, MINIMALSIZE)
+	dataBuffer := buffer.NewDataBuffer(reader, buffer.MINIMALSIZE)
 
 	request := &Request{ParserState: Initialized}
 
 	for request.ParserState != Done {
 
-		err := dataBuffer.readNextEOF()
+		err := dataBuffer.ReadNextEOF()
 
 		if err != nil {
 			return request, err
 		}
 
-		if dataBuffer.eof {
+		if dataBuffer.EOF {
 			request.ParseError = errors.New("unexpected EOF")
 			request.ParserState = Done
 			break
 		}
 
-		dataBuffer.remove(request.parse(dataBuffer.current()))
+		dataBuffer.Remove(request.parse(dataBuffer.Current()))
 	}
 
 	return request, request.ParseError
