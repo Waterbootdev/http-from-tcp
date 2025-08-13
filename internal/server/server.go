@@ -49,10 +49,9 @@ func (s *Server) Close() error {
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
 	log.Printf("Handling connection from %s", conn.RemoteAddr())
-	headers := response.GetDefaultHeaders(len(HELLO_WORLD))
+	headers := response.GetDefaultHeaders(0)
 	response.WriteStatusLine(conn, response.OK)
 	response.WriteHeaders(conn, headers)
-	conn.Write([]byte(HELLO_WORLD))
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }
 
