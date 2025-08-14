@@ -1,11 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
 	"sync/atomic"
 
+	"github.com/Waterbootdev/http-from-tcp/internal/request"
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
@@ -19,15 +21,16 @@ const HELLO_WORLD = "Hello World!"
 type Server struct {
 	listener net.Listener
 	closed   atomic.Bool
+	handler  Handler
 }
 
-func Serve(port int) (*Server, error) {
+func Serve(port int, handler Handler) (*Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return nil, err
 	}
 
-	server := &Server{listener: listener}
+	server := &Server{listener: listener, handler: handler}
 
 	go func() {
 		server.listen()
@@ -49,9 +52,34 @@ func (s *Server) Close() error {
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
 	log.Printf("Handling connection from %s", conn.RemoteAddr())
-	headers := response.GetDefaultHeaders(0)
+
+	request, err := request.RequestFromReader(conn)
+
+	log.Printf("Request: %v", request)
+
+	if err != nil {
+		headers := response.GetDefaultHeaders(0)
+		response.WriteStatusLine(conn, response.BAD_REQUEST)
+		response.WriteHeaders(conn, headers)
+		log.Printf("Connection from %s closed", conn.RemoteAddr())
+		return
+	}
+
+	buffer := &bytes.Buffer{}
+
+	handlerErr := s.handler(buffer, request)
+
+	if handlerErr != nil {
+		handlerErr.Write(conn)
+		return
+	}
+
+	headers := response.GetDefaultHeaders(buffer.Len())
 	response.WriteStatusLine(conn, response.OK)
 	response.WriteHeaders(conn, headers)
+
+	conn.Write(buffer.Bytes())
+
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }
 
