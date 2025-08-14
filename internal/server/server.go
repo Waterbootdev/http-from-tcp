@@ -44,17 +44,13 @@ func (s *Server) Close() error {
 
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
+
 	log.Printf("Handling connection from %s", conn.RemoteAddr())
 
 	request, err := request.RequestFromReader(conn)
 
-	log.Printf("Request: %v", request)
-
 	if err != nil {
-		headers := response.GetDefaultHeaders(0)
-		response.WriteStatusLine(conn, response.BAD_REQUEST)
-		response.WriteHeaders(conn, headers)
-		log.Printf("Connection from %s closed", conn.RemoteAddr())
+		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error()}).Write(conn)
 		return
 	}
 
@@ -63,15 +59,13 @@ func (s *Server) handle(conn net.Conn) {
 	handlerErr := s.handler(buffer, request)
 
 	if handlerErr != nil {
+
 		handlerErr.Write(conn)
+
 		return
 	}
 
-	headers := response.GetDefaultHeaders(buffer.Len())
-	response.WriteStatusLine(conn, response.OK)
-	response.WriteHeaders(conn, headers)
-
-	conn.Write(buffer.Bytes())
+	response.WriteBufferOk(conn, buffer)
 
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }

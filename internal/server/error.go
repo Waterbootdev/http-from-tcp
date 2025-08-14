@@ -1,17 +1,36 @@
 package server
 
 import (
-	"fmt"
 	"io"
+	"log"
+
+	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
 // HandlerError simply contains a status code and a message
 
 type HandlerError struct {
-	StatusCode int
+	StatusCode response.StatusCode
 	Message    string
 }
 
-func (e *HandlerError) Write(w io.Writer) (int, error) {
-	return fmt.Fprintf(w, "HandlerError: ( %d ) %s\n", e.StatusCode, e.Message)
+func (e *HandlerError) Write(w io.Writer) {
+
+	err := response.WriteStatusLine(w, e.StatusCode)
+
+	if err != nil {
+		return
+	}
+
+	err = response.WriteHeaders(w, response.GetDefaultHeaders(len(e.Message)))
+
+	if err != nil {
+		return
+	}
+
+	_, err = w.Write([]byte(e.Message))
+
+	if err != nil {
+		log.Printf("Error writing handler error response: %v", err)
+	}
 }

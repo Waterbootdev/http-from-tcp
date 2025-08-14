@@ -153,6 +153,7 @@ func (r *Request) NextState() {
 		r.ParserState = RequestStateParsingHeaders
 	case RequestStateParsingHeaders:
 		r.ParserState = RequestStateParsingBody
+		r.ParserState = Done
 	case RequestStateParsingBody:
 		r.ParserState = Done
 	}

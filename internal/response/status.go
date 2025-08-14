@@ -17,7 +17,7 @@ const BLANK_RESPONSE_REASON = " "
 
 var statusCodeReasons = map[StatusCode]string{
 	OK:                    " OK",
-	BAD_REQUEST:           "Bad Request",
+	BAD_REQUEST:           " Bad Request",
 	INTERNAL_SERVER_ERROR: " Internal Server Error",
 }
 
