@@ -11,13 +11,6 @@ import (
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
-const HELLO_WORLD_RESPONSE = `HTTP/1.1 200 OK
-Content-Type: text/plain
-
-Hello World!`
-
-const HELLO_WORLD = "Hello World!"
-
 type Server struct {
 	listener net.Listener
 	closed   atomic.Bool
