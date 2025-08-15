@@ -152,8 +152,11 @@ func (r *Request) NextState() {
 	case Initialized:
 		r.ParserState = RequestStateParsingHeaders
 	case RequestStateParsingHeaders:
-		r.ParserState = RequestStateParsingBody
-		r.ParserState = Done
+		if r.Headers.IsContentLengthNot(0) {
+			r.ParserState = RequestStateParsingBody
+		} else {
+			r.ParserState = Done
+		}
 	case RequestStateParsingBody:
 		r.ParserState = Done
 	}
