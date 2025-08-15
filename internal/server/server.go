@@ -52,7 +52,7 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 
-	buffer := &bytes.Buffer{}
+	buffer := bytes.NewBuffer([]byte{})
 
 	handlerErr := s.handler(buffer, request)
 
@@ -63,7 +63,7 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 
-	response.WriteBufferOk(conn, buffer)
+	response.WriteBufferLogError(conn, buffer)
 
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }
@@ -72,6 +72,9 @@ func (s *Server) listen() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
+			if s.closed.Load() {
+				return
+			}
 			log.Printf("Error accepting connection: %v", err)
 			continue
 		}
