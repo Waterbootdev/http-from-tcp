@@ -21,6 +21,8 @@ const (
 	Done
 )
 
+const CONTENT_LENGTH_KEY = "content-length"
+
 type Request struct {
 	RequestLine RequestLine
 	Headers     headers.Headers
@@ -45,7 +47,7 @@ func (r *Request) checkValidEOF() {
 		return
 	}
 
-	if r.Headers.IsContentLengthNot(len(r.Body)) {
+	if r.Headers.IsContentLengthNot(CONTENT_LENGTH_KEY, len(r.Body)) {
 		r.ParseError = errors.New("content length does not match body length")
 		return
 	}
@@ -152,7 +154,7 @@ func (r *Request) NextState() {
 	case Initialized:
 		r.ParserState = RequestStateParsingHeaders
 	case RequestStateParsingHeaders:
-		if r.Headers.IsContentLengthNot(0) {
+		if r.Headers.IsContentLengthNot(CONTENT_LENGTH_KEY, 0) {
 			r.ParserState = RequestStateParsingBody
 		} else {
 			r.ParserState = Done

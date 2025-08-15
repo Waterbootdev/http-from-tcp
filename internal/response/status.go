@@ -43,3 +43,22 @@ func HtmlHead(StatusCode StatusCode) string {
     <title>%d%s</title>
   </head>`, StatusCode, statusReason(StatusCode))
 }
+
+func htmlBody(h1 string, p string) string {
+	return fmt.Sprintf(`<body>
+    <h1>%s</h1>
+	<p>%s</p>
+  </body>`, h1, p)
+
+}
+
+func HtmlHandlerMessage(statusCode StatusCode, h1 string, p string) string {
+	return fmt.Sprintf(`<html>
+  %s
+  %s
+</html>`, HtmlHead(statusCode), htmlBody(h1, p))
+}
+
+func HtmlHandlerErrorMessage(statusCode StatusCode, p string) string {
+	return HtmlHandlerMessage(statusCode, statusReason(statusCode), p)
+}

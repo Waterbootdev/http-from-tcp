@@ -1,24 +1,32 @@
 package server
 
 import (
-	"io"
+	"bytes"
 
 	"github.com/Waterbootdev/http-from-tcp/internal/request"
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
-type Handler func(w io.Writer, req *request.Request) *HandlerError
+type Handler func(w *response.Writer, req *request.Request)
 
-var ExampleHandler Handler = func(w io.Writer, req *request.Request) *HandlerError {
+var ExampleHandler Handler = func(w *response.Writer, req *request.Request) {
 
 	switch req.RequestLine.RequestTarget {
+	case "/":
+		writeSuccesResponse(w)
 	case "/yourproblem":
-		return &HandlerError{StatusCode: 400, Message: "Your problem is not my problem\n", ContentType: response.PLAIN}
+		NewHandlerError(response.BAD_REQUEST, "Your request honestly kinda sucked.").Write(w)
 	case "/myproblem":
-		return &HandlerError{StatusCode: 500, Message: "Woopsie, my bad\n", ContentType: response.PLAIN}
+		NewHandlerError(response.INTERNAL_SERVER_ERROR, "Okay, you know what? This one is on me.").Write(w)
 	}
 
-	w.Write([]byte("All good, frfr\n"))
+}
 
-	return nil
+func writeSuccesResponse(w *response.Writer) {
+	buffer := bytes.NewBuffer([]byte{})
+	_, err := buffer.WriteString(response.HtmlHandlerMessage(response.OK, "Success!", "Your request was an absolute banger."))
+	if err != nil {
+		return
+	}
+	w.WriteBufferLogError(response.HTML, buffer)
 }

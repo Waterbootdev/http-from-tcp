@@ -11,8 +11,8 @@ import (
 
 type Headers map[string]string
 
-func (h Headers) IsContentLengthNot(contentLength int) bool {
-	if value, ok := h["content-length"]; ok {
+func (h Headers) IsContentLengthNot(contentLengthKey string, contentLength int) bool {
+	if value, ok := h[contentLengthKey]; ok {
 		return strconv.Itoa(contentLength) != value
 	} else {
 		return contentLength != 0

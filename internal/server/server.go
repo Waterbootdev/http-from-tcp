@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -47,23 +46,14 @@ func (s *Server) handle(conn net.Conn) {
 
 	request, err := request.RequestFromReader(conn)
 
+	writer := response.NewWriter(conn)
+
 	if err != nil {
-		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: response.PLAIN}).Write(conn)
+		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: response.PLAIN}).Write(writer)
 		return
 	}
 
-	buffer := bytes.NewBuffer([]byte{})
-
-	handlerErr := s.handler(buffer, request)
-
-	if handlerErr != nil {
-
-		handlerErr.Write(conn)
-
-		return
-	}
-
-	response.WriteBufferLogError(conn, buffer)
+	s.handler(writer, request)
 
 	log.Printf("Connection from %s closed", conn.RemoteAddr())
 }

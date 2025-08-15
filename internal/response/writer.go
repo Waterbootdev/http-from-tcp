@@ -1,11 +1,15 @@
 package response
 
 import (
+	"bytes"
 	"errors"
 	"io"
+	"log"
 
 	"github.com/Waterbootdev/http-from-tcp/internal/headers"
 )
+
+const CONTENT_LENGTH_KEY = "Content-Length"
 
 type WriterStatus int
 
@@ -17,12 +21,12 @@ const (
 )
 
 type Writer struct {
-	ioWriter io.Writer
+	IoWriter io.Writer
 	Status   WriterStatus
 }
 
-func NewWriter() *Writer {
-	return &Writer{}
+func NewWriter(ioWriter io.Writer) *Writer {
+	return &Writer{IoWriter: ioWriter, Status: WriteStatusLineStatus}
 }
 
 func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
@@ -30,7 +34,7 @@ func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
 		return errors.New("invalid status")
 	}
 
-	err := WriteStatusLine(w.ioWriter, statusCode)
+	err := WriteStatusLine(w.IoWriter, statusCode)
 
 	if err != nil {
 		return err
@@ -47,13 +51,13 @@ func (w *Writer) WriteHeaders(headers headers.Headers) error {
 		return errors.New("invalid status")
 	}
 
-	err := WriteHeaders(w.ioWriter, headers)
+	err := WriteHeaders(w.IoWriter, headers)
 
 	if err != nil {
 		return err
 	}
 
-	if headers.IsContentLengthNot(0) {
+	if headers.IsContentLengthNot(CONTENT_LENGTH_KEY, 0) {
 		w.Status = WriteBodyStatus
 	} else {
 		w.Status = WriteDoneStatus
@@ -69,5 +73,43 @@ func (w *Writer) WriteBody(p []byte) (int, error) {
 
 	w.Status = WriteDoneStatus
 
-	return w.ioWriter.Write(p)
+	return w.IoWriter.Write(p)
+}
+
+func (w *Writer) WriteBuffer(contentType ContentType, buffer *bytes.Buffer) error {
+	err := w.WriteStatusLine(OK)
+
+	if err != nil {
+		return err
+	}
+
+	err = w.WriteContentTypeHeaders(buffer.Len(), contentType)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = w.WriteBody(buffer.Bytes())
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *Writer) WriteBufferLogError(contentType ContentType, buffer *bytes.Buffer) {
+
+	err := w.WriteBuffer(contentType, buffer)
+
+	if err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
+}
+
+func (w *Writer) WriteDefaultHeaders(contentLen int) error {
+	return w.WriteHeaders(GetDefaultHeaders(contentLen))
+}
+func (w *Writer) WriteContentTypeHeaders(contentLen int, contentType ContentType) error {
+	return w.WriteHeaders(GetContentTypeHeaders(contentLen, contentType))
 }
