@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/Waterbootdev/http-from-tcp/internal/request"
+	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
 type Handler func(w io.Writer, req *request.Request) *HandlerError
@@ -12,9 +13,9 @@ var ExampleHandler Handler = func(w io.Writer, req *request.Request) *HandlerErr
 
 	switch req.RequestLine.RequestTarget {
 	case "/yourproblem":
-		return &HandlerError{StatusCode: 400, Message: "Your problem is not my problem\n"}
+		return &HandlerError{StatusCode: 400, Message: "Your problem is not my problem\n", ContentType: response.PLAIN}
 	case "/myproblem":
-		return &HandlerError{StatusCode: 500, Message: "Woopsie, my bad\n"}
+		return &HandlerError{StatusCode: 500, Message: "Woopsie, my bad\n", ContentType: response.PLAIN}
 	}
 
 	w.Write([]byte("All good, frfr\n"))

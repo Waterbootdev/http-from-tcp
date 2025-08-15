@@ -10,8 +10,9 @@ import (
 // HandlerError simply contains a status code and a message
 
 type HandlerError struct {
-	StatusCode response.StatusCode
-	Message    string
+	StatusCode  response.StatusCode
+	Message     string
+	ContentType response.ContentType
 }
 
 func (e *HandlerError) Write(w io.Writer) {
@@ -22,7 +23,7 @@ func (e *HandlerError) Write(w io.Writer) {
 		return
 	}
 
-	err = response.WriteHeaders(w, response.GetDefaultHeaders(len(e.Message)))
+	err = response.WriteHeaders(w, response.GetContentTypeHeaders(len(e.Message), e.ContentType))
 
 	if err != nil {
 		return

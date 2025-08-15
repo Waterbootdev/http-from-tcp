@@ -48,7 +48,7 @@ func (s *Server) handle(conn net.Conn) {
 	request, err := request.RequestFromReader(conn)
 
 	if err != nil {
-		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error()}).Write(conn)
+		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: response.PLAIN}).Write(conn)
 		return
 	}
 
