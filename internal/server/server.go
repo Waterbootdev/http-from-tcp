@@ -25,9 +25,7 @@ func Serve(port int, handler Handler) (*Server, error) {
 
 	server := &Server{listener: listener, handler: handler}
 
-	go func() {
-		server.listen()
-	}()
+	go server.listen()
 
 	return server, nil
 }
