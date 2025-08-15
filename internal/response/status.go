@@ -37,3 +37,9 @@ func statusReason(statusCode StatusCode) string {
 		return BLANK_RESPONSE_REASON
 	}
 }
+
+func HtmlHead(StatusCode StatusCode) string {
+	return fmt.Sprintf(`<head>
+    <title>%d%s</title>
+  </head>`, StatusCode, statusReason(StatusCode))
+}

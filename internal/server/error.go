@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"log"
 
@@ -34,4 +35,19 @@ func (e *HandlerError) Write(w io.Writer) {
 	if err != nil {
 		log.Printf("Error writing handler error response: %v", err)
 	}
+}
+
+func htmlBody(h1 string, p string) string {
+	return fmt.Sprintf(`<body>
+    <h1>%s</h1>
+	<p>%s</p>
+  </body>`, h1, p)
+
+}
+
+func HtmlHandlerErrorMessage(statusCode response.StatusCode, h1 string, p string) string {
+	return fmt.Sprintf(`<html>
+  %s
+  %s
+</html>`, response.HtmlHead(statusCode), htmlBody(h1, p))
 }
