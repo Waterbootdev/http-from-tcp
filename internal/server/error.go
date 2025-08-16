@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 
+	"github.com/Waterbootdev/http-from-tcp/internal/headers"
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
 
@@ -11,7 +12,7 @@ import (
 type HandlerError struct {
 	StatusCode  response.StatusCode
 	Message     string
-	ContentType response.ContentType
+	ContentType headers.ContentType
 }
 
 func (e *HandlerError) Write(w *response.Writer) {
@@ -22,7 +23,7 @@ func (e *HandlerError) Write(w *response.Writer) {
 		return
 	}
 
-	err = w.WriteHeaders(response.GetContentTypeHeaders(len(e.Message), e.ContentType))
+	err = w.WriteHeaders(headers.GetContentTypeHeaders(len(e.Message), e.ContentType))
 
 	if err != nil {
 		return
@@ -36,5 +37,5 @@ func (e *HandlerError) Write(w *response.Writer) {
 }
 
 func NewHandlerError(statusCode response.StatusCode, p string) *HandlerError {
-	return &HandlerError{StatusCode: statusCode, Message: response.HtmlHandlerErrorMessage(statusCode, p), ContentType: response.HTML}
+	return &HandlerError{StatusCode: statusCode, Message: response.HtmlHandlerErrorMessage(statusCode, p), ContentType: headers.HTML}
 }

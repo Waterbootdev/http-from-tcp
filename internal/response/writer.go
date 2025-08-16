@@ -3,6 +3,7 @@ package response
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 
@@ -16,6 +17,7 @@ type WriterStatus int
 const (
 	WriteStatusLineStatus WriterStatus = iota
 	WriteHeadersStatus
+	WriteChunkStatus
 	WriteBodyStatus
 	WriteDoneStatus
 )
@@ -25,8 +27,122 @@ type Writer struct {
 	Status   WriterStatus
 }
 
+const MINIMAL_CHUNK_BUFFER_LENGTH = 32
+const MAXIMAL_CHUNK_BUFFER_LENGTH = 1024 * 1204
+
+func (w *Writer) WriteTrailers(trailers []string) error {
+	return nil
+}
+
+func (w *Writer) RewriteCunks(reader io.Reader, bufferLength int) (readBuffer *bytes.Buffer, err error) {
+
+	readBuffer = bytes.NewBuffer([]byte{})
+
+	buffer := make([]byte, max(MINIMAL_CHUNK_BUFFER_LENGTH, min(MAXIMAL_CHUNK_BUFFER_LENGTH, bufferLength)))
+
+	for {
+		n, err := reader.Read(buffer)
+
+		if err != nil {
+
+			if errors.Is(err, io.EOF) {
+				_, err = w.WriteEndChunk()
+
+				if err != nil {
+					return readBuffer, err
+				}
+
+				break
+			}
+
+			w.Status = WriteDoneStatus
+
+			return readBuffer, err
+		}
+
+		readBuffer.Write(buffer[:n])
+
+		_, err = w.WriteChunk(n, buffer[:n])
+
+		if err != nil {
+			return readBuffer, err
+		}
+	}
+
+	return readBuffer, nil
+}
+
+func (w *Writer) WriteEndChunk() (int, error) {
+	if w.Status != WriteChunkStatus {
+		return 0, errors.New("invalid status")
+	}
+
+	n, err := w.IoWriter.Write([]byte("0\r\n"))
+
+	if err != nil {
+		w.Status = WriteDoneStatus
+		return n, err
+	}
+
+	w.Status = WriteHeadersStatus
+
+	return n, nil
+}
+
+func (w *Writer) WriteChunk(chunkLength int, chunk []byte) (int, error) {
+	if w.Status != WriteChunkStatus {
+		return 0, errors.New("invalid status")
+	}
+
+	if chunkLength <= 0 {
+		return 0, errors.New("invalid chunk length")
+	}
+
+	tn := 0
+
+	n, err := fmt.Fprintf(w.IoWriter, "%x\r\n", chunkLength)
+	tn += n
+
+	if err != nil {
+		return tn, err
+	}
+
+	n, err = w.IoWriter.Write(chunk)
+	tn += n
+
+	if err != nil {
+		return tn, err
+	}
+
+	n, err = w.IoWriter.Write([]byte("\r\n"))
+	tn += n
+
+	if err != nil {
+		return tn, err
+	}
+
+	return tn, nil
+}
+
 func NewWriter(ioWriter io.Writer) *Writer {
 	return &Writer{IoWriter: ioWriter, Status: WriteStatusLineStatus}
+}
+
+func (w *Writer) WriteBeginTransferEncoding(trailers []string) error {
+	err := w.WriteStatusLine(OK)
+
+	if err != nil {
+		return err
+	}
+
+	err = WriteHeaders(w.IoWriter, headers.GetTransferEncodingTrailerHeaders(trailers))
+
+	if err != nil {
+		return err
+	}
+
+	w.Status = WriteChunkStatus
+	return nil
 }
 
 func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
@@ -76,7 +192,7 @@ func (w *Writer) WriteBody(p []byte) (int, error) {
 	return w.IoWriter.Write(p)
 }
 
-func (w *Writer) WriteBuffer(contentType ContentType, buffer *bytes.Buffer) error {
+func (w *Writer) WriteBuffer(contentType headers.ContentType, buffer *bytes.Buffer) error {
 	err := w.WriteStatusLine(OK)
 
 	if err != nil {
@@ -98,7 +214,7 @@ func (w *Writer) WriteBuffer(contentType ContentType, buffer *bytes.Buffer) erro
 	return nil
 }
 
-func (w *Writer) WriteBufferLogError(contentType ContentType, buffer *bytes.Buffer) {
+func (w *Writer) WriteBufferLogError(contentType headers.ContentType, buffer *bytes.Buffer) {
 
 	err := w.WriteBuffer(contentType, buffer)
 
@@ -108,8 +224,8 @@ func (w *Writer) WriteBufferLogError(contentType ContentType, buffer *bytes.Buff
 }
 
 func (w *Writer) WriteDefaultHeaders(contentLen int) error {
-	return w.WriteHeaders(GetDefaultHeaders(contentLen))
+	return w.WriteHeaders(headers.GetDefaultHeaders(contentLen))
 }
-func (w *Writer) WriteContentTypeHeaders(contentLen int, contentType ContentType) error {
-	return w.WriteHeaders(GetContentTypeHeaders(contentLen, contentType))
+func (w *Writer) WriteContentTypeHeaders(contentLen int, contentType headers.ContentType) error {
+	return w.WriteHeaders(headers.GetContentTypeHeaders(contentLen, contentType))
 }

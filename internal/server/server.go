@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync/atomic"
 
+	"github.com/Waterbootdev/http-from-tcp/internal/headers"
 	"github.com/Waterbootdev/http-from-tcp/internal/request"
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
@@ -49,7 +50,7 @@ func (s *Server) handle(conn net.Conn) {
 	writer := response.NewWriter(conn)
 
 	if err != nil {
-		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: response.PLAIN}).Write(writer)
+		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: headers.PLAIN}).Write(writer)
 		return
 	}
 
