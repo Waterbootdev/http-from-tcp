@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,8 @@ var ExampleHandler Handler = func(w *response.Writer, req *request.Request) {
 	switch taget {
 	case "/":
 		writeSuccesResponse(w)
+	case "/video":
+		handleVideo(w, req)
 	case "/yourproblem":
 		NewHandlerError(response.BAD_REQUEST, "Your request honestly kinda sucked.").Write(w)
 	case "/myproblem":
@@ -35,6 +38,29 @@ var ExampleHandler Handler = func(w *response.Writer, req *request.Request) {
 		handlePrefixTargets(w, req, taget)
 	}
 
+}
+
+func handleVideo(w *response.Writer, _ *request.Request) {
+	video, err := os.ReadFile("assets/vim.mp4")
+	if err != nil {
+		NewHandlerError(response.INTERNAL_SERVER_ERROR, err.Error()).Write(w)
+		return
+	}
+	err = w.WriteStatusLine(response.OK)
+	if err != nil {
+		log.Printf("Error writing status line: %v", err)
+		return
+	}
+	err = w.WriteHeaders(headers.GetContentTypeHeaders(len(video), headers.MP4))
+	if err != nil {
+		log.Printf("Error writing headers: %v", err)
+		return
+	}
+	_, err = w.WriteBody(video)
+	if err != nil {
+		log.Printf("Error writing body: %v", err)
+		return
+	}
 }
 
 func writeSuccesResponse(w *response.Writer) {

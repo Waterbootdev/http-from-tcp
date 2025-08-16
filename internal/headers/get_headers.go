@@ -12,11 +12,21 @@ func GetDefaultHeaders(contentLen int) Headers {
 type ContentType string
 
 const (
-	PLAIN      ContentType = "text/plain"
-	HTML       ContentType = "text/html"
-	CSS        ContentType = "text/css"
-	JAVASCRIPT ContentType = "text/javascript"
-	JSON       ContentType = "application/json"
+	PLAIN        ContentType = "text/plain"
+	HTML         ContentType = "text/html"
+	CSS          ContentType = "text/css"
+	JAVASCRIPT   ContentType = "text/javascript"
+	JSON         ContentType = "application/json"
+	XML          ContentType = "application/xml"
+	MP4          ContentType = "video/mp4"
+	PNG          ContentType = "image/png"
+	GIF          ContentType = "image/gif"
+	JPEG         ContentType = "image/jpeg"
+	SVG          ContentType = "image/svg+xml"
+	PDF          ContentType = "application/pdf"
+	ZIP          ContentType = "application/zip"
+	GZIP         ContentType = "application/gzip"
+	OCTET_STREAM ContentType = "application/octet-stream"
 )
 
 func GetContentTypeHeaders(contentLen int, contentType ContentType) Headers {
