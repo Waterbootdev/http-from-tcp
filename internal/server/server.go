@@ -50,7 +50,7 @@ func (s *Server) handle(conn net.Conn) {
 	writer := response.NewWriter(conn)
 
 	if err != nil {
-		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: headers.PLAIN}).Write(writer)
+		(&HandlerError{StatusCode: response.BAD_REQUEST, Message: err.Error(), ContentType: headers.PLAIN}).write(writer)
 		return
 	}
 

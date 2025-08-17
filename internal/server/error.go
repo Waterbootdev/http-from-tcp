@@ -1,8 +1,6 @@
 package server
 
 import (
-	"log"
-
 	"github.com/Waterbootdev/http-from-tcp/internal/headers"
 	"github.com/Waterbootdev/http-from-tcp/internal/response"
 )
@@ -15,27 +13,32 @@ type HandlerError struct {
 	ContentType headers.ContentType
 }
 
-func (e *HandlerError) Write(w *response.Writer) {
+func (e *HandlerError) write(w *response.Writer) {
 
-	err := w.WriteStatusLine(e.StatusCode)
-
-	if err != nil {
+	if w.WriteStatusLine(e.StatusCode) {
 		return
 	}
 
-	err = w.WriteHeaders(headers.GetContentTypeHeaders(len(e.Message), e.ContentType))
-
-	if err != nil {
+	if w.WriteHeaders(headers.GetContentTypeHeaders(len(e.Message), e.ContentType)) {
 		return
 	}
 
-	_, err = w.WriteBody([]byte(e.Message))
-
-	if err != nil {
-		log.Printf("Error writing handler error response: %v", err)
+	if w.WriteBody([]byte(e.Message)) {
+		return
 	}
 }
 
-func NewHandlerError(statusCode response.StatusCode, p string) *HandlerError {
+func newHandlerError(statusCode response.StatusCode, p string) *HandlerError {
 	return &HandlerError{StatusCode: statusCode, Message: response.HtmlHandlerErrorMessage(statusCode, p), ContentType: headers.HTML}
+}
+
+func internalServerError(err error) *HandlerError {
+	return serverError(response.INTERNAL_SERVER_ERROR, err)
+}
+func badRequestServerError(err error) *HandlerError {
+	return serverError(response.BAD_REQUEST, err)
+}
+
+func serverError(statusCode response.StatusCode, err error) *HandlerError {
+	return &HandlerError{StatusCode: statusCode, Message: err.Error(), ContentType: headers.PLAIN}
 }
